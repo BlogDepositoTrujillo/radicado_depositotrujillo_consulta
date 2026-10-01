@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Radicados - Ferretería Depósito Trujillo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs (Compat v9) - Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Header Corporativo -->
+    <header class="bg-blue-900 text-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-5 flex items-center space-x-3">
+            <div class="bg-blue-600 p-2.5 rounded-xl shadow-inner text-xl">
+                <i class="fa-solid fa-store"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight">Ferretería Depósito Trujillo</h1>
+                <p class="text-xs text-blue-200">Portal de Consulta de Estado de Radicados y PQRS</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal de Consulta -->
+    <main class="flex-grow max-w-xl w-full mx-auto px-4 py-10">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 space-y-6">
+            
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-blue-50 text-blue-700 p-3 rounded-full text-xl mb-1 border border-blue-100">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900">Consulte su Requerimiento</h2>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto">Ingrese su código de radicado (ej. RAD-2026-0001, o solo los números) para ver el estado en tiempo real.</p>
+            </div>
+
+            <!-- Buscador -->
+            <div class="space-y-3">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-ticket"></i>
+                    </span>
+                    <input type="text" id="input-radicado" placeholder="Ej. RAD-2026-0001 o solo 0001" class="w-full text-sm pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none uppercase font-mono font-bold tracking-wide">
+                </div>
+                <button onclick="consultarRadicado()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm py-3 rounded-xl transition shadow-lg shadow-blue-700/20 flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-search"></i> Consultar Estado
+                </button>
+            </div>
+
+            <!-- Resultado de la Consulta (Oculto inicialmente) -->
+            <div id="resultado-contenedor" class="hidden space-y-4 pt-4 border-t border-slate-100 animate-in fade-in duration-300">
+                <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Número de Radicado</span>
+                        <strong id="res-id" class="text-blue-900 font-mono text-sm"></strong>
+                    </div>
+                    <div id="res-estado-badge" class="px-3 py-1 rounded-full text-xs font-bold"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-slate-400 block font-medium">Fecha de Radicación</span>
+                        <strong id="res-fecha" class="text-slate-700"></strong>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-slate-400 block font-medium">Canal de Ingreso</span>
+                        <strong id="res-canal" class="text-slate-700"></strong>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-slate-400 block font-medium">Tipo de Solicitud</span>
+                        <strong id="res-tipo" class="text-slate-700"></strong>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-slate-400 block font-medium">Asesor a Cargo</span>
+                        <strong id="res-asesor" class="text-blue-900"></strong>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Descripción / Motivo del Caso</span>
+                    <p id="res-descripcion" class="text-xs text-slate-700 leading-relaxed italic"></p>
+                </div>
+            </div>
+
+            <!-- Mensaje de No Encontrado -->
+            <div id="mensaje-error" class="hidden text-center py-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-xs font-medium">
+                <i class="fa-solid fa-circle-exclamation text-base block mb-1"></i> No se encontró ningún radicado con ese código. Verifique e intente nuevamente.
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 text-center py-4 text-xs text-slate-500">
+        <p>© 2026 Ferretería Depósito Trujillo. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Lógica de Consulta Inteligente con Firebase -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "ATzaSyAoV8eXh8-LdWrsuJ7qITXJZHebIupF",
+            authDomain: "depositotrujilloradicados.firebaseapp.com",
+            databaseURL: "https://depositotrujilloradicados-default-rtdb.firebaseio.com",
+            projectId: "depositotrujilloradicados",
+            storageBucket: "depositotrujilloradicados.appspot.com",
+            messagingSenderId: "628166998557",
+            appId: "1:628166998557:web:b448cc86faba87fc46934",
+            measurementId: "G-Y1P0P7RNN"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const dbRef = firebase.database().ref('radicados');
+
+        function consultarRadicado() {
+            let codigoBuscado = document.getElementById('input-radicado').value.trim().toUpperCase();
+            const contenedorResultado = document.getElementById('resultado-contenedor');
+            const mensajeError = document.getElementById('mensaje-error');
+
+            if (!codigoBuscado) {
+                alert("Por favor, ingrese un número de radicado.");
+                return;
+            }
+
+            contenedorResultado.classList.add('hidden');
+            mensajeError.classList.add('hidden');
+
+            dbRef.once("value", (snapshot) => {
+                const data = snapshot.val();
+                let encontrado = null;
+
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        const caso = data[key];
+                        if (caso.id) {
+                            const idSistema = caso.id.toUpperCase();
+                            // Limpiamos ambos códigos para comparar solo los números y letras esenciales (quitando guiones, espacios o prefijos opcionales)
+                            const idLimpioSistema = idSistema.replace(/[^A-Z0-9]/g, '');
+                            const idLimpioBuscado = codigoBuscado.replace(/[^A-Z0-9]/g, '');
+
+                            // Coincide si es exacto, si contiene el código digitado, o si coinciden los dígitos finales
+                            if (idSistema === codigoBuscado || 
+                                idLimpioSistema === idLimpioBuscado || 
+                                idSistema.includes(codigoBuscado) || 
+                                idLimpioSistema.endsWith(idLimpioBuscado)) {
+                                encontrado = caso;
+                            }
+                        }
+                    });
+                }
+
+                if (encontrado) {
+                    document.getElementById('res-id').innerText = encontrado.id;
+                    document.getElementById('res-fecha').innerText = encontrado.fecha;
+                    document.getElementById('res-canal').innerText = encontrado.canal;
+                    document.getElementById('res-tipo').innerText = encontrado.tipo;
+                    document.getElementById('res-asesor').innerText = encontrado.asesor;
+                    document.getElementById('res-descripcion').innerText = encontrado.descripcion;
+
+                    const badge = document.getElementById('res-estado-badge');
+                    badge.innerText = encontrado.estado;
+                    if (encontrado.estado === 'Pendiente') {
+                        badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300";
+                    } else if (encontrado.estado === 'En Proceso') {
+                        badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300";
+                    } else if (encontrado.estado === 'Resuelto') {
+                        badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+                    }
+
+                    contenedorResultado.classList.remove('hidden');
+                } else {
+                    mensajeError.classList.remove('hidden');
+                }
+            }, (error) => {
+                console.error("Error al consultar:", error);
+                alert("Error al conectar con la base de datos.");
+            });
+        }
+    </script>
+</body>
+</html>
